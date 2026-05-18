@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload pipeline artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: pipeline-artifacts
           path: ${{ steps.pipeline_config.outputs.artifacts_path || 'dist/artifacts' }}
