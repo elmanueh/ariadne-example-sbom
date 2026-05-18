@@ -1,0 +1,71 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  pipeline:
+    name: Main pipeline
+    runs-on: ubuntu-latest
+
+    services:
+      rdf4j:
+        image: eclipse/rdf4j-workbench:5.3.0-tomcat
+        ports:
+          - 8080:8080
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Login to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Pull image
+        shell: bash
+        run: |
+          docker pull "${{ vars.PIPELINE_IMAGE }}"
+
+      - name: Read pipeline configuration
+        id: pipeline_config
+        shell: bash
+        run: |
+          artifacts_path="$(
+            docker run --rm \
+              --entrypoint python \
+              -v "${GITHUB_WORKSPACE}:/workspace" \
+              -w /workspace \
+              "${{ vars.PIPELINE_IMAGE }}" \
+              -c 'import yaml; print((yaml.safe_load(open("pipeline-config.yml", encoding="utf-8")) or {}).get("artifacts_dir", "dist/artifacts"))'
+          )"
+          echo "artifacts_path=${artifacts_path}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run complete pipeline
+        shell: bash
+        run: |
+          docker run --rm \
+            --network host \
+            -e QASAR_KEY="${{ secrets.QASAR_KEY }}" \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            "${{ vars.PIPELINE_IMAGE }}" \
+            run \
+              --workspace /workspace \
+              --config pipeline-config.yml
+
+      - name: Upload pipeline artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-artifacts
+          path: ${{ steps.pipeline_config.outputs.artifacts_path || 'dist/artifacts' }}
+          if-no-files-found: warn

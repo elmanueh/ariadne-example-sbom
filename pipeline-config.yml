@@ -1,0 +1,6 @@
+artifacts_dir: dist/artifacts
+
+inputs:
+  datasources: datasources
+  mappings: mappings
+  ontologies: ontologies
