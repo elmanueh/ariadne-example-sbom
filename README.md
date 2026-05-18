@@ -4,7 +4,7 @@ This repository is an example of how an ontology project can run the base pipeli
 
 ## Pipeline Configuration
 
-You can optionally create `pipeline-config.yml` to configure paths and artifact output:
+You can optionally create `pipeline-config.yml` in the repository root to configure paths and artifact output:
 
 ```yaml
 artifacts_dir: dist/artifacts
@@ -24,6 +24,8 @@ The project needs:
 The folder names can be changed in `pipeline-config.yml`.
 
 ## GitHub Actions Settings
+
+The pipeline is triggered manually from `Actions -> Pipeline -> Run workflow`.
 
 Repository secrets:
 
@@ -57,3 +59,5 @@ Also store:
 - `GHCR_USER`: repository secret with the GitHub username that created the token.
 - `QASAR_KEY`: repository secret with the QASAR API key.
 - `PIPELINE_IMAGE`: repository variable with the full image name and tag.
+
+Generated files are uploaded as the `pipeline-artifacts` GitHub Actions artifact.

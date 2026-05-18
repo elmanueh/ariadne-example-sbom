@@ -1,9 +1,7 @@
 name: Pipeline
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -35,20 +33,6 @@ jobs:
         run: |
           docker pull "${{ vars.PIPELINE_IMAGE }}"
 
-      - name: Read pipeline configuration
-        id: pipeline_config
-        shell: bash
-        run: |
-          artifacts_path="$(
-            docker run --rm \
-              --entrypoint python \
-              -v "${GITHUB_WORKSPACE}:/workspace" \
-              -w /workspace \
-              "${{ vars.PIPELINE_IMAGE }}" \
-              -c 'import yaml; print((yaml.safe_load(open("pipeline-config.yml", encoding="utf-8")) or {}).get("artifacts_dir", "dist/artifacts"))'
-          )"
-          echo "artifacts_path=${artifacts_path}" >> "${GITHUB_OUTPUT}"
-
       - name: Run complete pipeline
         shell: bash
         run: |
@@ -67,5 +51,5 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: pipeline-artifacts
-          path: ${{ steps.pipeline_config.outputs.artifacts_path || 'dist/artifacts' }}
+          path: dist/artifacts
           if-no-files-found: warn
