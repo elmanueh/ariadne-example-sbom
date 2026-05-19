@@ -25,7 +25,8 @@ The folder names can be changed in `pipeline-config.yml`.
 
 ## GitHub Actions Settings
 
-The pipeline is triggered manually from `Actions -> Pipeline -> Run workflow`.
+The complete pipeline is triggered manually from `Actions -> Pipeline -> Run workflow`.
+The modular variant is triggered from `Actions -> Modular Pipeline -> Run workflow`.
 
 Repository secrets:
 
@@ -61,3 +62,18 @@ Also store:
 - `PIPELINE_IMAGE`: repository variable with the full image name and tag.
 
 Generated files are uploaded as the `pipeline-artifacts` GitHub Actions artifact.
+
+The modular workflow runs the same phases with `run-phase`, but splits them into jobs. Independent input phases run in parallel, and dependent phases download the phase artifacts produced earlier:
+
+```text
+datasource_validation + mapping_validation + ontology_analysis
+  -> mapping_quality_analysis
+
+ontology_analysis
+  -> qasar_analysis
+
+mapping_quality_analysis + qasar_analysis
+  -> graph_generation
+```
+
+The duplicated Docker invocation lives in `.github/actions/run-pipeline-phase/action.yml`. Each phase job uploads `phase-artifacts-<phase>`, excluding the aggregate `pipeline-context.json` so parallel jobs do not overwrite each other. Dependent jobs merge the `phase-context/*-context.json` files before running.

@@ -1,0 +1,126 @@
+name: Modular Pipeline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PIPELINE_IMAGE: ${{ vars.PIPELINE_IMAGE }}
+  GHCR_USER: ${{ secrets.GHCR_USER }}
+  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+  QASAR_KEY: ${{ secrets.QASAR_KEY }}
+
+jobs:
+  input_phases:
+    name: Input phase (${{ matrix.phase }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        phase:
+          - datasource_validation
+          - mapping_validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run ${{ matrix.phase }}
+        uses: ./.github/actions/run-pipeline-phase
+        with:
+          phase: ${{ matrix.phase }}
+          restore-artifacts: "false"
+
+  ontology_analysis:
+    name: Ontology analysis
+    runs-on: ubuntu-latest
+
+    services:
+      rdf4j:
+        image: eclipse/rdf4j-workbench:5.3.0-tomcat
+        ports:
+          - 8080:8080
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run ontology_analysis
+        uses: ./.github/actions/run-pipeline-phase
+        with:
+          phase: ontology_analysis
+          restore-artifacts: "false"
+
+  mapping_quality_analysis:
+    name: Mapping quality analysis
+    runs-on: ubuntu-latest
+    needs:
+      - input_phases
+      - ontology_analysis
+
+    services:
+      rdf4j:
+        image: eclipse/rdf4j-workbench:5.3.0-tomcat
+        ports:
+          - 8080:8080
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run mapping_quality_analysis
+        uses: ./.github/actions/run-pipeline-phase
+        with:
+          phase: mapping_quality_analysis
+
+  qasar_analysis:
+    name: QASAR analysis
+    runs-on: ubuntu-latest
+    needs:
+      - ontology_analysis
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run qasar_analysis
+        uses: ./.github/actions/run-pipeline-phase
+        with:
+          phase: qasar_analysis
+
+  graph_generation:
+    name: Graph generation
+    runs-on: ubuntu-latest
+    needs:
+      - input_phases
+      - mapping_quality_analysis
+      - qasar_analysis
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run graph_generation
+        uses: ./.github/actions/run-pipeline-phase
+        with:
+          phase: graph_generation
+
+  collect_artifacts:
+    name: Collect artifacts
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs:
+      - input_phases
+      - ontology_analysis
+      - mapping_quality_analysis
+      - qasar_analysis
+      - graph_generation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Collect pipeline artifacts
+        uses: ./.github/actions/collect-pipeline-artifacts
