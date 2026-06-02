@@ -1,36 +1,40 @@
-name: Collect Pipeline Artifacts
-description: Merge modular ontology-validator artifacts and upload the final artifact bundle.
+name: Run Analyzer Phase
+description: Run one analyzer phase from the configured image.
 
 inputs:
-  artifacts-path:
-    description: Directory used by the pipeline to exchange artifacts.
-    required: false
-    default: dist/artifacts
-  artifact-pattern:
-    description: Artifact name pattern produced by phase jobs.
-    required: false
-    default: phase-artifacts-*
-  artifact-name:
-    description: Final uploaded artifact name.
-    required: false
-    default: modular-pipeline-artifacts
+  phase:
+    description: Analyzer phase name.
+    required: true
 
 runs:
   using: composite
   steps:
-    - name: Prepare artifact directory
+    - name: Validate settings
       shell: bash
-      run: mkdir -p "${{ inputs.artifacts-path }}"
+      run: |
+        if [ -z "${PIPELINE_IMAGE}" ]; then
+          echo "::error::Set env PIPELINE_IMAGE."
+          exit 1
+        fi
 
-    - name: Download phase artifacts
+    - name: Read config
+      id: config
+      shell: bash
+      run: python3 .github/scripts/read-analyzer-config.py
+
+    - name: Download upstream artifacts
       uses: actions/download-artifact@v6
       continue-on-error: true
       with:
-        pattern: ${{ inputs.artifact-pattern }}
+        pattern: analyzer-phase-artifacts-*
         path: ${{ runner.temp }}/phase-artifacts
         merge-multiple: false
 
-    - name: Merge phase artifacts
+    - name: Prepare artifact directory
+      shell: bash
+      run: mkdir -p "${{ steps.config.outputs.artifacts-dir }}"
+
+    - name: Restore upstream artifact state
       shell: bash
       run: |
         python3 <<'PY'
@@ -38,7 +42,7 @@ runs:
         import shutil
         from pathlib import Path
 
-        artifacts_path = Path("${{ inputs.artifacts-path }}")
+        artifacts_path = Path("${{ steps.config.outputs.artifacts-dir }}")
         download_path = Path("${{ runner.temp }}") / "phase-artifacts"
         artifacts_path.mkdir(parents=True, exist_ok=True)
 
@@ -88,10 +92,28 @@ runs:
             )
         PY
 
-    - name: Upload pipeline artifacts
+    - name: Pull image
+      shell: bash
+      run: docker pull "${PIPELINE_IMAGE}"
+
+    - name: Run phase
+      shell: bash
+      run: |
+        docker run --rm \
+          -e QASAR_KEY="${QASAR_KEY}" \
+          -v "${GITHUB_WORKSPACE}:/workspace" \
+          -w /workspace \
+          "${PIPELINE_IMAGE}" \
+          run-phase "${{ inputs.phase }}" \
+            --workspace /workspace \
+            --config pipeline-config.yml
+
+    - name: Upload artifacts
       if: ${{ always() }}
       uses: actions/upload-artifact@v6
       with:
-        name: ${{ inputs.artifact-name }}
-        path: ${{ inputs.artifacts-path }}
+        name: analyzer-phase-artifacts-${{ inputs.phase }}
+        path: |
+          ${{ steps.config.outputs.artifacts-dir }}
+          !${{ steps.config.outputs.artifacts-dir }}/pipeline-context.json
         if-no-files-found: warn

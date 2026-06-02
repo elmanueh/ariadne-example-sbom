@@ -1,15 +1,14 @@
-name: Modular Pipeline
+name: Modular Analyzer
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 env:
   PIPELINE_IMAGE: ${{ vars.PIPELINE_IMAGE }}
-  GHCR_USER: ${{ secrets.GHCR_USER }}
-  GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
   QASAR_KEY: ${{ secrets.QASAR_KEY }}
 
 jobs:
@@ -27,31 +26,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run ${{ matrix.phase }}
-        uses: ./.github/actions/run-pipeline-phase
+      - name: Run phase
+        uses: ./.github/actions/run-analyzer-phase
         with:
           phase: ${{ matrix.phase }}
-          restore-artifacts: "false"
 
   ontology_analysis:
     name: Ontology analysis
     runs-on: ubuntu-latest
 
-    services:
-      rdf4j:
-        image: eclipse/rdf4j-workbench:5.3.0-tomcat
-        ports:
-          - 8080:8080
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run ontology_analysis
-        uses: ./.github/actions/run-pipeline-phase
+      - name: Run phase
+        uses: ./.github/actions/run-analyzer-phase
         with:
           phase: ontology_analysis
-          restore-artifacts: "false"
 
   mapping_quality_analysis:
     name: Mapping quality analysis
@@ -60,18 +51,12 @@ jobs:
       - input_phases
       - ontology_analysis
 
-    services:
-      rdf4j:
-        image: eclipse/rdf4j-workbench:5.3.0-tomcat
-        ports:
-          - 8080:8080
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run mapping_quality_analysis
-        uses: ./.github/actions/run-pipeline-phase
+      - name: Run phase
+        uses: ./.github/actions/run-analyzer-phase
         with:
           phase: mapping_quality_analysis
 
@@ -85,8 +70,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run qasar_analysis
-        uses: ./.github/actions/run-pipeline-phase
+      - name: Run phase
+        uses: ./.github/actions/run-analyzer-phase
         with:
           phase: qasar_analysis
 
@@ -102,10 +87,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Run graph_generation
-        uses: ./.github/actions/run-pipeline-phase
+      - name: Run phase
+        uses: ./.github/actions/run-analyzer-phase
         with:
           phase: graph_generation
+
+      - name: Commit generated graph
+        uses: ./.github/actions/commit-generated-graph
 
   collect_artifacts:
     name: Collect artifacts
@@ -122,5 +110,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Collect pipeline artifacts
-        uses: ./.github/actions/collect-pipeline-artifacts
+      - name: Collect artifacts
+        uses: ./.github/actions/collect-analyzer-artifacts

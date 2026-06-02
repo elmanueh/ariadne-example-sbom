@@ -1,43 +1,34 @@
-name: Pipeline
+name: Analyzer
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  actions: read
+  contents: write
 
 jobs:
-  pipeline:
-    name: Main pipeline
+  run_analyzer:
+    name: Run analyzer
     runs-on: ubuntu-latest
-
-    services:
-      rdf4j:
-        image: eclipse/rdf4j-workbench:5.3.0-tomcat
-        ports:
-          - 8080:8080
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Login to GHCR
-        uses: docker/login-action@v4
-        with:
-          registry: ghcr.io
-          username: ${{ secrets.GHCR_USER }}
-          password: ${{ secrets.GHCR_TOKEN }}
+      - name: Read config
+        id: config
+        run: python3 .github/scripts/read-analyzer-config.py
 
       - name: Pull image
         shell: bash
         run: |
           docker pull "${{ vars.PIPELINE_IMAGE }}"
 
-      - name: Run complete pipeline
+      - name: Run analyzer
         shell: bash
         run: |
           docker run --rm \
-            --network host \
             -e QASAR_KEY="${{ secrets.QASAR_KEY }}" \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
@@ -46,10 +37,13 @@ jobs:
               --workspace /workspace \
               --config pipeline-config.yml
 
-      - name: Upload pipeline artifacts
+      - name: Commit generated graph
+        uses: ./.github/actions/commit-generated-graph
+
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: pipeline-artifacts
-          path: dist/artifacts
+          name: analyzer-artifacts
+          path: ${{ steps.config.outputs.artifacts-dir }}
           if-no-files-found: warn

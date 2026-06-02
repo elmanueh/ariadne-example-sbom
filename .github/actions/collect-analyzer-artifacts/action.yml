@@ -1,63 +1,27 @@
-name: Run Pipeline Phase
-description: Run one ontology-validator phase from the configured pipeline image.
-
-inputs:
-  phase:
-    description: Pipeline phase name.
-    required: true
-  config:
-    description: Pipeline config path.
-    required: false
-    default: pipeline-config.yml
-  artifacts-path:
-    description: Directory used by the pipeline to exchange artifacts.
-    required: false
-    default: dist/artifacts
-  restore-artifacts:
-    description: Download artifacts produced by previous phase jobs.
-    required: false
-    default: "true"
+name: Collect Analyzer Artifacts
+description: Merge analyzer artifacts and upload the final artifact bundle.
 
 runs:
   using: composite
   steps:
-    - name: Validate pipeline settings
+    - name: Read config
+      id: config
       shell: bash
-      run: |
-        if [ -z "${PIPELINE_IMAGE}" ]; then
-          echo "::error::Set env PIPELINE_IMAGE."
-          exit 1
-        fi
-        if [ -z "${GHCR_USER}" ]; then
-          echo "::error::Set env GHCR_USER."
-          exit 1
-        fi
-        if [ -z "${GHCR_TOKEN}" ]; then
-          echo "::error::Set env GHCR_TOKEN."
-          exit 1
-        fi
-
-    - name: Login to GHCR
-      uses: docker/login-action@v4
-      with:
-        registry: ghcr.io
-        username: ${{ env.GHCR_USER }}
-        password: ${{ env.GHCR_TOKEN }}
-
-    - name: Download upstream phase artifacts
-      if: ${{ inputs.restore-artifacts == 'true' }}
-      uses: actions/download-artifact@v6
-      with:
-        pattern: phase-artifacts-*
-        path: ${{ runner.temp }}/phase-artifacts
-        merge-multiple: false
+      run: python3 .github/scripts/read-analyzer-config.py
 
     - name: Prepare artifact directory
       shell: bash
-      run: mkdir -p "${{ inputs.artifacts-path }}"
+      run: mkdir -p "${{ steps.config.outputs.artifacts-dir }}"
 
-    - name: Restore upstream artifact state
-      if: ${{ inputs.restore-artifacts == 'true' }}
+    - name: Download phase artifacts
+      uses: actions/download-artifact@v6
+      continue-on-error: true
+      with:
+        pattern: analyzer-phase-artifacts-*
+        path: ${{ runner.temp }}/phase-artifacts
+        merge-multiple: false
+
+    - name: Merge phase artifacts
       shell: bash
       run: |
         python3 <<'PY'
@@ -65,7 +29,7 @@ runs:
         import shutil
         from pathlib import Path
 
-        artifacts_path = Path("${{ inputs.artifacts-path }}")
+        artifacts_path = Path("${{ steps.config.outputs.artifacts-dir }}")
         download_path = Path("${{ runner.temp }}") / "phase-artifacts"
         artifacts_path.mkdir(parents=True, exist_ok=True)
 
@@ -115,29 +79,10 @@ runs:
             )
         PY
 
-    - name: Pull image
-      shell: bash
-      run: docker pull "${PIPELINE_IMAGE}"
-
-    - name: Run phase
-      shell: bash
-      run: |
-        docker run --rm \
-          --network host \
-          -e QASAR_KEY="${QASAR_KEY}" \
-          -v "${GITHUB_WORKSPACE}:/workspace" \
-          -w /workspace \
-          "${PIPELINE_IMAGE}" \
-          run-phase "${{ inputs.phase }}" \
-            --workspace /workspace \
-            --config "${{ inputs.config }}"
-
-    - name: Upload phase artifacts
+    - name: Upload artifacts
       if: ${{ always() }}
       uses: actions/upload-artifact@v6
       with:
-        name: phase-artifacts-${{ inputs.phase }}
-        path: |
-          ${{ inputs.artifacts-path }}
-          !${{ inputs.artifacts-path }}/pipeline-context.json
+        name: modular-analyzer-artifacts
+        path: ${{ steps.config.outputs.artifacts-dir }}
         if-no-files-found: warn
