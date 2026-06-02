@@ -34,7 +34,7 @@ runs:
         target_value = os.environ["TARGET_GRAPH"].strip()
 
         if not target_value:
-            print("::notice::outputs.graph is not set in pipeline-config.yml. Nothing to commit.")
+            print("::notice::outputs.graph_file is not set in ontology-validator.yml. Nothing to commit.")
             Path(os.environ["TARGET_PATH_FILE"]).write_text("", encoding="utf-8")
             sys.exit(0)
 

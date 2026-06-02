@@ -34,8 +34,7 @@ jobs:
             -w /workspace \
             "${{ vars.PIPELINE_IMAGE }}" \
             run \
-              --workspace /workspace \
-              --config pipeline-config.yml
+              --workspace /workspace
 
       - name: Commit generated graph
         uses: ./.github/actions/commit-generated-graph

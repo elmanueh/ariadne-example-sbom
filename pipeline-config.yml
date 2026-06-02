@@ -1,9 +1,0 @@
-artifacts_dir: dist/artifacts
-
-inputs:
-  datasources: datasources
-  mappings: mappings
-  ontologies: ontologies
-
-outputs:
-  graph: knowledgegraph/knowledge-graph.nt

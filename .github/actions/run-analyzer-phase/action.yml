@@ -105,8 +105,7 @@ runs:
           -w /workspace \
           "${PIPELINE_IMAGE}" \
           run-phase "${{ inputs.phase }}" \
-            --workspace /workspace \
-            --config pipeline-config.yml
+            --workspace /workspace
 
     - name: Upload artifacts
       if: ${{ always() }}

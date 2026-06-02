@@ -1,0 +1,8 @@
+inputs:
+  datasources_dir: datasources
+  ontology_dir: ontologies
+  mapping_file: mappings/mapping.json.yaml
+
+outputs:
+  artifacts_dir: dist/artifacts
+  graph_file: knowledgegraph/knowledge-graph.nt
