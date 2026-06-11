@@ -54,7 +54,7 @@ mappings:
         o:
           value: $(serialNumber)
           datatype: xsd:string
-      - p: se_sec_vocab:serialNumber # TODO: add logic to make sure it complies with regex from ontology
+      - p: schema:serialNumber # TODO: add logic to make sure it complies with regex from ontology
         o:
           value: $(serialNumber)
           datatype: xsd:string
@@ -82,7 +82,7 @@ mappings:
             parameters:
               - [str1, "$(metadata.tools.name)", s]
               - [str2, "$(name)", o]
-      - p: se_sec_vocab:license
+      - p: schema:license
         o:
           mapping: MetadataLicense
           condition:
@@ -138,7 +138,7 @@ mappings:
     s: se_sec_data_external_reference:$(url) # TODO: base+UUID instead of base+URL
     po:
       - [a, se_sec_vocab_external_reference:website] # TODO: add logic to choose proper type
-      - p: se_sec_vocab:url
+      - p: schema:url
         o:
           value: $(url)
           datatype: xsd:anyURI
@@ -191,7 +191,7 @@ mappings:
     s: se_sec_data_external_reference:$(url) # TODO: base+UUID instead of base+URL
     po:
       - [a, se_sec_vocab_external_reference:distribution] # TODO: add logic to choose proper type
-      - p: se_sec_vocab:url
+      - p: schema:url
         o:
           value: $(url)
           datatype: xsd:anyURI
