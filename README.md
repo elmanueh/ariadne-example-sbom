@@ -4,7 +4,7 @@ This repository is an example of how an ontology project can run the base pipeli
 
 ## Pipeline Configuration
 
-Create `ontology-validator.yml` in the repository root to configure paths and artifact output:
+Create `ariadne.yml` in the repository root to configure paths and artifact output:
 
 ```yaml
 inputs:
@@ -23,7 +23,7 @@ The project needs:
 - one mapping file;
 - one folder for ontologies.
 
-The paths can be changed in `ontology-validator.yml`.
+The paths can be changed in `ariadne.yml`.
 
 ## GitHub Actions Settings
 
@@ -49,8 +49,8 @@ Store:
 - `QASAR_KEY`: repository secret with the QASAR API key.
 - `PIPELINE_IMAGE`: repository variable with the full image name and tag.
 
-The workflows read `outputs.artifacts_dir` from `ontology-validator.yml`. The general analyzer uploads generated files as the `analyzer-artifacts` GitHub Actions artifact. The modular analyzer uploads the final merged bundle as `modular-analyzer-artifacts`.
-When graph generation finishes successfully, the workflows copy `<outputs.artifacts_dir>/final_graph.nt` into the repository and commit it if `outputs.graph_file` is configured in `ontology-validator.yml`. If `outputs.graph_file` is omitted or empty, the graph is only uploaded as a workflow artifact and the repository is not updated.
+The workflows read `outputs.artifacts_dir` from `ariadne.yml`. The general analyzer uploads generated files as the `analyzer-artifacts` GitHub Actions artifact. The modular analyzer uploads the final merged bundle as `modular-analyzer-artifacts`.
+When graph generation finishes successfully, the workflows copy `<outputs.artifacts_dir>/final_graph.nt` into the repository and commit it if `outputs.graph_file` is configured in `ariadne.yml`. If `outputs.graph_file` is omitted or empty, the graph is only uploaded as a workflow artifact and the repository is not updated.
 
 The modular analyzer workflow runs the same phases with `run-phase`, but splits them into jobs. Independent input phases run in parallel, and dependent phases download the phase artifacts produced earlier:
 

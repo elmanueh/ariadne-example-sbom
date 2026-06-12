@@ -4,13 +4,13 @@ import os
 import sys
 from pathlib import Path
 
-CONFIG_PATH = Path("ontology-validator.yml")
+CONFIG_PATH = Path("ariadne.yml")
 DEFAULT_ARTIFACTS_DIR = "dist/artifacts"
 
 
 def main() -> int:
     if not CONFIG_PATH.is_file():
-        print("::error::ontology-validator.yml must exist in the repository root.")
+        print("::error::ariadne.yml must exist in the repository root.")
         return 1
 
     artifacts_dir = DEFAULT_ARTIFACTS_DIR
@@ -37,11 +37,15 @@ def main() -> int:
             graph_output = _yaml_scalar(line.split(":", maxsplit=1)[1])
 
     if not _is_repo_relative(artifacts_dir):
-        print("::error::outputs.artifacts_dir must be repository-relative and cannot contain '..'.")
+        print(
+            "::error::outputs.artifacts_dir must be repository-relative and cannot contain '..'."
+        )
         return 1
 
     if graph_output and not _is_repo_relative(graph_output):
-        print("::error::outputs.graph_file must be repository-relative and cannot contain '..'.")
+        print(
+            "::error::outputs.graph_file must be repository-relative and cannot contain '..'."
+        )
         return 1
 
     output_path = os.environ.get("GITHUB_OUTPUT")
