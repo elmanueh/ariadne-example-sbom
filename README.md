@@ -14,7 +14,7 @@ inputs:
 
 outputs:
   artifacts_dir: dist/artifacts
-  graph_file: generated/final_graph.nt
+  graph_file: knowledgegraph/knowledge-graph.nt
 ```
 
 The project needs:
@@ -49,8 +49,8 @@ Store:
 - `QASAR_KEY`: repository secret with the QASAR API key.
 - `PIPELINE_IMAGE`: repository variable with the full image name and tag.
 
-The workflows read `outputs.artifacts_dir` from `ariadne.yml`. The general analyzer uploads generated files as the `analyzer-artifacts` GitHub Actions artifact. The modular analyzer uploads the final merged bundle as `modular-analyzer-artifacts`.
-When graph generation finishes successfully, the workflows copy `<outputs.artifacts_dir>/final_graph.nt` into the repository and commit it if `outputs.graph_file` is configured in `ariadne.yml`. If `outputs.graph_file` is omitted or empty, the graph is only uploaded as a workflow artifact and the repository is not updated.
+The workflows read `outputs.artifacts_dir` and `outputs.graph_file` from `ariadne.yml`. The general analyzer uploads generated files as the `analyzer-artifacts` GitHub Actions artifact. The modular analyzer uploads the final merged bundle as `modular-analyzer-artifacts`.
+When graph generation finishes successfully, the workflows copy `<outputs.artifacts_dir>/<outputs.graph_file>` into `<outputs.graph_file>` in the repository and commit it if it changed. If `outputs.graph_file` is omitted, the default graph path is `final_graph.nt`.
 
 The modular analyzer workflow runs the same phases with `run-phase`, but splits them into jobs. Independent input phases run in parallel, and dependent phases download the phase artifacts produced earlier:
 
