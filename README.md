@@ -36,7 +36,7 @@ Repository secrets:
 QASAR_KEY
 ```
 
-Repository variable:
+Repository variables:
 
 ```text
 PIPELINE_IMAGE=ghcr.io/OWNER/PRODUCER_REPOSITORY:sandbox
@@ -59,9 +59,9 @@ datasource_validation + mapping_validation + ontology_analysis
   -> mapping_quality_analysis
 
 ontology_analysis
-  -> qasar_analysis
+  -> ontology_validation
 
-mapping_quality_analysis + qasar_analysis
+mapping_quality_analysis + ontology_validation
   -> graph_generation
 ```
 
